@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>食味台灣 | 台灣美食圖鑑</title>
+    <!-- 引入圖標庫 (用於顯示星星、搜尋圖標等) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- 這是 SVG 濾鏡定義，不會顯示在畫面上，但會被 CSS 引用 -->
+    <!-- 原理：透過減少色階 (posterize) 和邊緣偵測，模擬向量圖的色塊感 -->
+    <svg width="0" height="0" style="position:absolute; pointer-events:none;">
+        <defs>
+            <filter id="vectorize">
+                <!-- 1. 稍微模糊以減少噪點 -->
+                <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur" />
+                <!-- 2. 色彩矩陣增強飽和度 -->
+                <feColorMatrix in="blur" type="saturate" values="2" result="saturated" />
+                <!-- 3. 利用 ComponentTransfer 進行色階分離 (Posterize效果) -->
+                <feComponentTransfer in="saturated" result="posterized">
+                    <feFuncR type="discrete" tableValues="0 0.25 0.5 0.75 1" />
+                    <feFuncG type="discrete" tableValues="0 0.25 0.5 0.75 1" />
+                    <feFuncB type="discrete" tableValues="0 0.25 0.5 0.75 1" />
+                </feComponentTransfer>
+                <!-- 4. 混合原始圖形與色階化圖形，讓細節保留一些 -->
+                <feBlend in="posterized" in2="SourceGraphic" mode="normal" />
+            </filter>
+        </defs>
+    </svg>
+
+    <!-- 標頭 -->
+    <header class="header">
+        <div class="logo">
+            <div class="logo-icon"><i data-lucide="utensils"></i></div>
+            <div>食味<span class="highlight">台灣</span></div>
+        </div>
+        <div class="search-container">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" id="searchInput" class="search-input" placeholder="搜尋美食 (例如: 魯肉飯...)">
+        </div>
+        <div class="header-actions">
+            <button id="themeToggle" class="icon-btn" title="切換主題"><i data-lucide="moon"></i></button>
+            <button id="settingsBtn" class="icon-btn" title="設定"><i data-lucide="settings"></i></button>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- Hero -->
+        <section class="hero">
+            <h2>探索 <span class="highlight">台灣風味</span></h2>
+            <p>每一口都是故事，每一道都是經典。</p>
+        </section>
+
+        <!-- 輪播 (Carousel) -->
+        <div class="carousel-container" id="carousel">
+            <div class="carousel-slide active">
+                <!-- 使用更高解析度的圖片連結 (w=1200, q=100) -->
+                <img src="img/下載.jpg" alt="魯肉飯">
+                <div class="carousel-caption">
+                    <span class="tag-badge">今日推薦</span>
+                    <h3>魯肉飯</h3>
+                    <p>台灣國民美食的代表，鹹香四溢。</p>
+                </div>
+            </div>
+            <div class="carousel-slide">
+                <img src="img/下載 (1).jpg" alt="珍珠奶茶">
+                <div class="carousel-caption">
+                    <span class="tag-badge">人氣飲品</span>
+                    <h3>珍珠奶茶</h3>
+                    <p>風靡全球的台灣發明，口感Q彈。</p>
+                </div>
+            </div>
+            <div class="carousel-slide">
+                <img src="img/下載 (2).jpg" alt="牛肉麵">
+                <div class="carousel-caption">
+                    <span class="tag-badge">經典麵食</span>
+                    <h3>牛肉麵</h3>
+                    <p>湯頭濃郁，肉質鮮嫩。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 分類 -->
+        <div class="categories" id="categoryContainer">
+            <button class="cat-btn active" data-category="全部">全部</button>
+            <button class="cat-btn" data-category="主食">主食</button>
+            <button class="cat-btn" data-category="小吃">小吃</button>
+            <button class="cat-btn" data-category="甜點">甜點</button>
+            <button class="cat-btn" data-category="飲品">飲品</button>
+        </div>
+
+        <!-- 美食列表 -->
+        <div class="food-grid" id="foodGrid">
+            <!-- JS 生成 -->
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2025 台灣美食圖鑑 (HTML/CSS 作業版). All rights reserved.</p>
+    </footer>
+
+    <!-- 設定側邊欄 (Settings Drawer) -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-drawer">
+            <div class="settings-header">
+                <span>網站設定</span>
+                <button class="icon-btn" id="closeSettings"><i data-lucide="x"></i></button>
+            </div>
+            <div class="settings-body">
+
+                <div class="setting-item">
+                    <label class="setting-label">視覺風格</label>
+                    <div class="switch-control" id="vectorToggle">
+                        <span>向量藝術風格 (自動轉圖)</span>
+                        <div class="switch-track">
+                            <div class="switch-thumb"></div>
+                        </div>
+                    </div>
+                    <p style="font-size:0.75rem; color:var(--text-secondary); margin-top:6px;">
+                        開啟後將自動把照片轉換為類似向量插畫的效果，讓畫面更乾淨。
+                    </p>
+                </div>
+
+                <div class="setting-item">
+                    <label class="setting-label">語言</label>
+                    <select
+                        style="width:100%; padding:8px; border-radius:8px; border:1px solid var(--border-color); background:var(--bg-color); color:var(--text-color);">
+                        <option>繁體中文 (台灣)</option>
+                        <option>English</option>
+                    </select>
+                </div>
+
+                <div style="margin-top:auto; padding:12px; background:rgba(0,0,0,0.03); border-radius:8px;">
+                    <p style="font-size:0.75rem; color:var(--text-secondary);">版本 2.1 (Vector Engine)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模態視窗 (Modal) -->
+    <div class="modal-overlay" id="foodModal">
+        <div class="modal-content">
+            <div class="modal-image">
+                <img id="modalImg" src="" alt="">
+                <button class="close-btn" id="closeModal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                    <span class="category-tag" id="modalCategory">類別</span>
+                    <span class="rating"><i data-lucide="star" class="star-icon"></i> <span
+                            id="modalRating">4.5</span></span>
+                </div>
+                <h3 class="modal-title" id="modalTitle">菜名</h3>
+                <hr style="border:0; border-top:1px dashed var(--border-color); margin: 16px 0;">
+                <p style="color:var(--text-secondary); line-height:1.6;" id="modalDesc">描述...</p>
+                <div style="margin-top:20px; background: rgba(0,0,0,0.03); padding:12px; border-radius:8px;">
+                    <div
+                        style="font-size:0.8rem; font-weight:bold; color:var(--text-secondary); margin-bottom:4px; display:flex; align-items:center; gap:4px;">
+                        <i data-lucide="map-pin" style="width:14px;"></i> 推薦地點
+                    </div>
+                    <div style="font-size:0.9rem;" id="modalLocation">地點...</div>
+                </div>
+                <div class="modal-tags" id="modalTags"></div>
+                <button class="action-btn">加入必吃清單</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        // 資料 (更新圖片解析度參數 q=100, w=800)
+        const foodData = [
+            { id: 1, name: "魯肉飯", category: "主食", desc: "台灣國民美食的代表。選用肥瘦適中的五花肉，切成小丁後以醬油、紅蔥頭、五香粉慢火滷製。", location: "全台各地", rating: 4.9, tags: ["必吃", "平價"], img: "img/下載.jpg" },
+            { id: 2, name: "珍珠奶茶", category: "飲品", desc: "風靡全球的台灣發明。濃郁的紅茶加入奶精或鮮奶，搭配口感Q彈的木薯粉圓。", location: "台中起源", rating: 5.0, tags: ["經典", "手搖飲"], img: "img/下載 (1).jpg" },
+            { id: 3, name: "牛肉麵", category: "主食", desc: "深受喜愛的麵食。主要分為紅燒與清燉兩派。紅燒湯頭濃郁微辣，清燉則強調牛骨高湯。", location: "台北市", rating: 4.8, tags: ["湯麵", "重口味"], img: "img/下載 (2).jpg" },
+            { id: 4, name: "臭豆腐", category: "小吃", desc: "聞起來臭，吃起來香。經過發酵的豆腐油炸至外酥內嫩，搭配酸甜爽口的台式泡菜。", location: "各大夜市", rating: 4.7, tags: ["夜市", "酥脆"], img: "img/下載 (3).jpg" },
+            { id: 5, name: "芒果冰", category: "甜點", desc: "夏日消暑聖品。以細緻的刨冰或雪花冰為基底，鋪上滿滿的新鮮愛文芒果塊。", location: "台北永康街", rating: 4.9, tags: ["夏日", "冰品"], img: "img/下載 (4).jpg" },
+            { id: 6, name: "小籠包", category: "主食", desc: "皮薄餡多汁。特色在於麵皮打褶的工藝以及內餡中包裹的皮凍，蒸熟後化為鮮美湯汁。", location: "鼎泰豐", rating: 4.8, tags: ["點心", "國際知名"], img: "img/下載 (5).jpg" },
+            { id: 7, name: "蚵仔煎", category: "小吃", desc: "利用新鮮蚵仔（牡蠣）、雞蛋、蔬菜，淋上太白粉芡水煎至金黃。", location: "各大夜市", rating: 4.6, tags: ["海鮮", "傳統"], img: "img/下載 (6).jpg" },
+            { id: 8, name: "鳳梨酥", category: "甜點", desc: "台灣最著名的伴手禮。外皮酥鬆充滿奶油香氣，內餡分為傳統冬瓜膏或土鳳梨。", location: "伴手禮店", rating: 4.7, tags: ["烘焙", "下午茶"], img: "img/下載 (7).jpg" }
+        ];
+
+        const grid = document.getElementById('foodGrid');
+        const modal = document.getElementById('foodModal');
+
+        // 渲染列表
+        function renderFood(filter = "全部", search = "") {
+            grid.innerHTML = "";
+            let delay = 0;
+            const filtered = foodData.filter(item => {
+                const matchCat = filter === "全部" || item.category === filter;
+                const matchSearch = item.name.includes(search) || item.desc.includes(search);
+                return matchCat && matchSearch;
+            });
+
+            if (filtered.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:40px; color:var(--text-secondary);">找不到相關美食</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'food-card';
+                card.style.animationDelay = `${delay}ms`;
+                card.innerHTML = `
+                    <div class="card-image">
+                        <img src="${item.img}" alt="${item.name}">
+                    </div>
+                    <div class="card-content">
+                        <div class="card-header">
+                            <span class="category-tag">${item.category}</span>
+                            <span class="rating"><i data-lucide="star" class="star-icon"></i> ${item.rating}</span>
+                        </div>
+                        <h3 class="food-title">${item.name}</h3>
+                        <p class="food-desc">${item.desc}</p>
+                        <div class="more-link">了解更多 <i data-lucide="chevron-right" style="width:14px;"></i></div>
+                    </div>
+                `;
+                card.onclick = () => openModal(item);
+                grid.appendChild(card);
+                delay += 50;
+            });
+            lucide.createIcons();
+        }
+
+        function openModal(item) {
+            document.getElementById('modalImg').src = item.img;
+            document.getElementById('modalTitle').textContent = item.name;
+            document.getElementById('modalCategory').textContent = item.category;
+            document.getElementById('modalRating').textContent = item.rating;
+            document.getElementById('modalDesc').textContent = item.desc;
+            document.getElementById('modalLocation').textContent = item.location;
+            const tagsContainer = document.getElementById('modalTags');
+            tagsContainer.innerHTML = item.tags.map(t => `<span class="modal-tag">#${t}</span>`).join('');
+            modal.classList.add('open');
+        }
+
+        document.getElementById('closeModal').onclick = () => modal.classList.remove('open');
+        modal.onclick = (e) => { if (e.target === modal) modal.classList.remove('open'); }
+
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.onclick = () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                renderFood(btn.dataset.category, document.getElementById('searchInput').value);
+            };
+        });
+
+        document.getElementById('searchInput').oninput = (e) => {
+            const activeCat = document.querySelector('.cat-btn.active').dataset.category;
+            renderFood(activeCat, e.target.value);
+        }
+
+        // 主題與設定邏輯
+        const themeBtn = document.getElementById('themeToggle');
+        themeBtn.onclick = () => {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.body.classList.contains('dark-mode') ? 'sun' : 'moon';
+            themeBtn.innerHTML = `<i data-lucide="${icon}"></i>`;
+            lucide.createIcons();
+        }
+
+        // 設定欄開關 (修復)
+        const settingsOverlay = document.getElementById('settingsOverlay');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const closeSettings = document.getElementById('closeSettings');
+
+        settingsBtn.onclick = () => settingsOverlay.classList.add('open');
+        closeSettings.onclick = () => settingsOverlay.classList.remove('open');
+        settingsOverlay.onclick = (e) => {
+            if (e.target === settingsOverlay) settingsOverlay.classList.remove('open');
+        }
+
+        // 向量風格開關
+        const vectorToggle = document.getElementById('vectorToggle');
+        vectorToggle.onclick = () => {
+            vectorToggle.classList.toggle('active');
+            document.body.classList.toggle('vector-mode');
+        }
+
+        // 輪播
+        let slideIndex = 0;
+        const slides = document.querySelectorAll('.carousel-slide');
+        function showSlides() {
+            slides.forEach((slide, i) => {
+                slide.classList.remove('active');
+                if (i === slideIndex) slide.classList.add('active');
+            });
+            slideIndex = (slideIndex + 1) % slides.length;
+        }
+        setInterval(showSlides, 4000);
+
+        renderFood();
+    </script>
+</body>
+
+</html>
